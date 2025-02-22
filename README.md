@@ -16,7 +16,7 @@ This project provides a command-line interface (CLI) tool to verify secrets foun
 
 1. Clone the repository:
     ```bash
-    git clone [<repository_url>](https://github.com/aydinnyunus/GitleaksVerifier.git)
+    git clone https://github.com/aydinnyunus/GitleaksVerifier.git
     cd GitleaksVerifier
     ```
 
