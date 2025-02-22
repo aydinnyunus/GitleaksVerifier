@@ -1,4 +1,4 @@
-# Secret Verifier CLI
+# GitleaksVerifier CLI
 
 This project provides a command-line interface (CLI) tool to verify secrets found by gitleaks. It supports various secret types and provides options for verbosity, rule filtering, and output customization.
 
