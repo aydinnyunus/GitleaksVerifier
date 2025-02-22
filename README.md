@@ -91,6 +91,50 @@ The output JSON file will have the following structure:
 ]
 ```
 
+## Supported Secrets
+The tool currently verifies the following secrets:
+
+- Generic API Key
+- Cloudflare API Key
+- PyPI Upload Token
+- Shopify Access Token
+- OpenAI API Key
+- NPM Access Token
+- Datadog Access Token
+- Dropbox API Token
+- Zendesk Secret Key
+- Algolia API Key
+- Slack Webhook
+- Slack Token
+- SauceLabs API Key
+- Facebook App Secret
+- Grafana Cloud API Token
+- Facebook Access Token
+- Firebase Token
+- GitHub Token (Personal Access Token)
+- GitLab Personal Access Token
+- GitHub Client Secret
+- GitHub SSH Key
+- Twilio API Key
+- Twitter API Key
+- Twitter Bearer Token
+- HubSpot API Key
+- Infura API Key
+- Mailgun Private API Token
+- Mapbox API Token
+- New Relic User API Key
+- DeviantArt Secret Key
+- Heroku API Key
+- DeviantArt Token
+- Pendo API Key
+- SendGrid Token
+- Square API Token
+- Contentful API Token
+- Microsoft Tenant ID
+- BrowserStack API Key
+- Azure Insights Key
+- Cypress Record Key
+  
 ## Logging
 
 The CLI uses the `colorama` library to provide colored output for different log levels:
