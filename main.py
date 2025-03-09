@@ -70,8 +70,9 @@ def verify_secrets(
     for item in data:
         rule_id = item.get("RuleID")
         secret = item.get("Secret")
+        match = item.get("Match")
 
-        result = {"secret": secret, "rule_id": rule_id, "valid": False}
+        result = {"secret": secret, "rule_id": rule_id, "valid": False, "match": match}
 
         if rule_filter and rule_filter.lower() != rule_id.lower():
             continue
@@ -165,9 +166,9 @@ def verify_secrets(
                 result["valid"] = False
 
             # Slack verification
-            elif rule_id == "slack-webhook":
-                response = requests.post(secret, json={"text": ""})
-                if "missing_text_or_fallback_or_attachments" in response.text:
+            elif rule_id == "slack-webhook" or rule_id == "slack-webhook-url":
+                response = requests.post(match, json={"text": ""})
+                if "missing_text_or_fallback_or_attachments" in response.text or "no_text" in response.text:
                     logger.info("Valid Slack webhook")
                     result["valid"] = True
 
@@ -213,6 +214,225 @@ def verify_secrets(
                 )
                 if response.status_code == 200:
                     logger.info("Valid Facebook access token")
+                    result["valid"] = True
+            elif rule_id == "gcp-api-key":
+                vulnerable_apis = []
+                url = "https://maps.googleapis.com/maps/api/staticmap?center=45%2C10&zoom=7&size=400x400&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.status_code == 200:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Staticmap API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Staticmap 			|| $2 per 1000 requests")
+                elif b"PNG" in response.content:
+                    print("API key is not vulnerable for Staticmap API.")
+                    print("Reason: Manually check the " + url + " to view the reason.")
+                else:
+                    print("API key is not vulnerable for Staticmap API.")
+                    print("Reason: " + str(response.content))
+
+                url = "https://maps.googleapis.com/maps/api/streetview?size=400x400&location=40.720032,-73.988354&fov=90&heading=235&pitch=10&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.status_code == 200:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Streetview API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Streetview 			|| $7 per 1000 requests")
+                elif b"PNG" in response.content:
+                    print("API key is not vulnerable for Staticmap API.")
+                    print("Reason: Manually check the " + url + " to view the reason.")
+                else:
+                    print("API key is not vulnerable for Staticmap API.")
+                    print("Reason: " + str(response.content))
+
+                url = "https://maps.googleapis.com/maps/api/directions/json?origin=Disneyland&destination=Universal+Studios+Hollywood4&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error_message") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Directions API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Directions 			|| $5 per 1000 requests")
+                    vulnerable_apis.append("Directions (Advanced) 	|| $10 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Directions API.")
+                    print("Reason: " + response.json()["error_message"])
+
+                url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=40,30&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error_message") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Geocode API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Geocode 			|| $5 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Geocode API.")
+                    print("Reason: " + response.json()["error_message"])
+
+                url = "https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=40.6655101,-73.89188969999998&destinations=40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.659569%2C-73.933783%7C40.729029%2C-73.851524%7C40.6860072%2C-73.6334271%7C40.598566%2C-73.7527626%7C40.659569%2C-73.933783%7C40.729029%2C-73.851524%7C40.6860072%2C-73.6334271%7C40.598566%2C-73.7527626&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error_message") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Distance Matrix API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Distance Matrix 		|| $5 per 1000 elements")
+                    vulnerable_apis.append("Distance Matrix (Advanced) 	|| $10 per 1000 elements")
+                else:
+                    print("API key is not vulnerable for Distance Matrix API.")
+                    print("Reason: " + response.json()["error_message"])
+
+                url = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=Museum%20of%20Contemporary%20Art%20Australia&inputtype=textquery&fields=photos,formatted_address,name,rating,opening_hours,geometry&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error_message") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Find Place From Text API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Find Place From Text 		|| $17 per 1000 elements")
+                else:
+                    print("API key is not vulnerable for Find Place From Text API.")
+                    print("Reason: " + response.json()["error_message"])
+
+                url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=Bingh&types=%28cities%29&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error_message") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Autocomplete API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Autocomplete 			|| $2.83 per 1000 requests")
+                    vulnerable_apis.append("Autocomplete Per Session 	|| $17 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Autocomplete API.")
+                    print("Reason: " + response.json()["error_message"])
+
+                url = "https://maps.googleapis.com/maps/api/elevation/json?locations=39.7391536,-104.9847034&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error_message") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Elevation API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Elevation 			|| $5 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Elevation API.")
+                    print("Reason: " + response.json()["error_message"])
+
+                url = "https://maps.googleapis.com/maps/api/timezone/json?location=39.6034810,-119.6822510&timestamp=1331161200&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("errorMessage") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Timezone API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Timezone 			|| $5 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Timezone API.")
+                    print("Reason: " + response.json()["errorMessage"])
+
+                url = "https://roads.googleapis.com/v1/nearestRoads?points=60.170880,24.942795|60.170879,24.942796|60.170877,24.942796&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Nearest Roads API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Nearest Roads 		|| $10 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Nearest Roads API.")
+                    print("Reason: " + response.json()["error"]["message"])
+
+                url = "https://www.googleapis.com/geolocation/v1/geolocate?key=" + secret
+                postdata = {'considerIp': 'true'}
+                response = requests.post(url, data=postdata, verify=False)
+                if response.text.find("error") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Geolocation API! Here is the PoC curl command which can be used from terminal:")
+                    print(
+                        "curl -i -s -k  -X $'POST' -H $'Host: www.googleapis.com' -H $'Content-Length: 22' --data-binary $'{\"considerIp\": \"true\"}' $'" + url + "'")
+                    vulnerable_apis.append("Geolocation 			|| $5 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Geolocation API.")
+                    print("Reason: " + response.json()["error"]["message"])
+
+                url = "https://roads.googleapis.com/v1/snapToRoads?path=-35.27801,149.12958|-35.28032,149.12907&interpolate=true&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Route to Traveled API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Route to Traveled 		|| $10 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Route to Traveled API.")
+                    print("Reason: " + response.json()["error"]["message"])
+
+                url = "https://roads.googleapis.com/v1/speedLimits?path=38.75807927603043,-9.03741754643809&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Speed Limit-Roads API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Speed Limit-Roads 		|| $20 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Speed Limit-Roads API.")
+
+                    print("Reason: " + response.json()["error"]["message"])
+
+                url = "https://maps.googleapis.com/maps/api/place/details/json?place_id=ChIJN1t_tDeuEmsRUsoyG83frY4&fields=name,rating,formatted_phone_number&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error_message") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Place Details API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Place Details 		|| $17 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Place Details API.")
+                    print("Reason: " + response.json()["error_message"])
+
+                url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=-33.8670522,151.1957362&radius=100&types=food&name=harbour&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error_message") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Nearby Search-Places API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Nearby Search-Places		|| $32 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Nearby Search-Places API.")
+                    print("Reason: " + response.json()["error_message"])
+
+                url = "https://maps.googleapis.com/maps/api/place/textsearch/json?query=restaurants+in+Sydney&key=" + secret
+                response = requests.get(url, verify=False)
+                if response.text.find("error_message") < 0:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Text Search-Places API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Text Search-Places 		|| $32 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Text Search-Places API.")
+                    print("Reason: " + response.json()["error_message"])
+
+                url = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=CnRtAAAATLZNl354RwP_9UKbQ_5Psy40texXePv4oAlgP4qNEkdIrkyse7rPXYGd9D_Uj1rVsQdWT4oRz4QrYAJNpFX7rzqqMlZw2h2E2y5IKMUZ7ouD_SlcHxYq1yL4KbKUv3qtWgTK0A6QbGh87GB3sscrHRIQiG2RrmU_jF4tENr9wGS_YxoUSSDrYjWmrNfeEHSGSc3FyhNLlBU&key=" + secret
+                response = requests.get(url, verify=False, allow_redirects=False)
+                if response.status_code == 302:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for Places Photo API! Here is the PoC link which can be used directly via browser:")
+                    print(url)
+                    vulnerable_apis.append("Places Photo 			|| $7 per 1000 requests")
+                else:
+                    print("API key is not vulnerable for Places Photo API.")
+                    print("Reason: Verbose responses are not enabled for this API, cannot determine the reason.")
+
+                url = "https://fcm.googleapis.com/fcm/send"
+                postdata = "{'registration_ids':['ABC']}"
+                response = requests.post(url, data=postdata, verify=False,
+                                         headers={'Content-Type': 'application/json', 'Authorization': 'key=' + secret})
+                if response.status_code == 200:
+                    print(
+                        "API key is \033[1;31;40mvulnerable\033[0m for FCM API! Here is the PoC curl command which can be used from terminal:")
+                    print(
+                        "curl --header \"Authorization: key=" + secret + "\" --header Content-Type:\"application/json\" https://fcm.googleapis.com/fcm/send -d '{\"registration_ids\":[\"ABC\"]}'")
+                    vulnerable_apis.append("FCM Takeover 			|| https://abss.me/posts/fcm-takeover/")
+                else:
+                    print("API key is not vulnerable for FCM API.")
+                    for lines in response.iter_lines():
+                        if (("TITLE") in str(lines)):
+                            print("Reason: " + str(lines).split("TITLE")[1].split("<")[0].replace(">", ""))
+
+                if len(vulnerable_apis) > 0:
                     result["valid"] = True
 
             # Firebase verification
@@ -298,7 +518,7 @@ def verify_secrets(
             elif rule_id == "hubspot-key":
                 response = requests.get(
                     "https://api.hubapi.com/owners/v2/owners",
-                    params={"hapikey": secret},
+                    params={"hsecret": secret},
                 )
                 if response.status_code == 200:
                     logger.info("Valid HubSpot API key")
