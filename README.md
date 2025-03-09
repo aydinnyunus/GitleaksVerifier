@@ -145,6 +145,7 @@ The CLI uses the `colorama` library to provide colored output for different log 
 - **DEBUG**: Blue
 
 It leverages verification methods from [streaak/keyhacks](https://github.com/streaak/keyhacks) for accurate validation.
+Thank you for [ozguralp](https://github.com/ozguralp/gmapsapiscanner) for Google Map API Key verification.
 
 ## Contact
 
